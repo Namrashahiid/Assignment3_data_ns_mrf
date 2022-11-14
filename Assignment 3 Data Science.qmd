@@ -5,4 +5,10 @@ editor: visual
 authors: Namra Shahid & Marit Rygg Fredheim
 ---
 
-## 
+## Assignment 3- Pendling
+
+In this assignment are we going to first install or generate the Data for a selection of municipalities in South-Rogaland from Statistical Central Agency (SSB).
+
+## Obtaining data from SSB:
+
+First in this assignment are we going to obtain the data from SSB.
