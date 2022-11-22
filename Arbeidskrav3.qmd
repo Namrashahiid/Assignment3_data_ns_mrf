@@ -1,0 +1,55 @@
+---
+title: "Assignment 3"
+author: "Marit"
+format: html
+editor: visual
+---
+
+## Assignment 3
+
+```{r}
+library(PxWebApiData)
+library(httr)
+```
+
+```{r}
+#Get more info about table
+ApiData(
+"http://data.ssb.no/api/v0/en/table/03321",
+returnMetaFrames = TRUE
+)
+```
+
+```{r}
+#Get more info about table
+ApiData(
+"http://data.ssb.no/api/v0/en/table/03321",
+returnApiQuery = TRUE
+)
+```
+
+```{r}
+PxWebApiData::ApiData(
+  urlToData = "http://data.ssb.no/api/v0/en/table/00321",
+  #ArbstedKomm = 
+  Bokommuen = list("1102", "1103", "1108", "1114", "1119", "1120", "1121", "1122", "1124", "1127", "1129",
+"1130", "1133", "1141", "1142", "1144"),
+  Tid = c(2000:2021, each = 12)
+  
+  
+)
+```
+
+```{r}
+PxWebApiData::ApiData(
+  "http://data.ssb.no/api/v0/en/table/00321",
+  # Have not been able to specify more complex regions
+  Region = list("11*"),
+  Tid = c(paste(
+    rep(2000:2021, each = 12), 
+    "M",
+    sprintf("%02d", 1:12), 
+    sep = "")
+    )
+  )
+```
