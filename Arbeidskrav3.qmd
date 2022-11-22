@@ -1,16 +1,35 @@
 ---
-title: "Assignment 3"
-author: "Marit"
-format: html
+title: "Arbeidskrav 3; Pendling"
+author: "Marit Rygg Fredheim & Namra Shahid"
+format: 
+  html: 
+    code-fold: true
+  pdf:
+    toc: true
 editor: visual
 ---
 
-## Assignment 3
+## Innledning
+
+I denne oppgaven skal vi studere pendle-mønster for regionen Sør-Rogaland (Nord_Jæren)...
+
+### Kommuner Sør-Rogaland 2018
+
+[Fra oppgavetekst: Vi definerer Nord-Jæren som følgende kommuner. Vi tar med både de «gamle» og «nye». Disse kommunene vil bare inneholde data for de årene de har eksistert.\
+Sandnes (-2019), Stavanger, Nye-Sandnes, Bjerkreim, Hå, Klepp, Time, Gjesdal, Sola, Randaberg, Forsand (-2019), Strand, Hjelmeland, Finnøy (-2019), Rennesøy (-2019), Kvitsøy.\
+De korresponderende kommune-numrene er:\
+1102, 1103, 1108, 1114, 1119, 1120, 1121,1122, 1124, 1127, 1129, 1130, 1133, 1141, 1142, 1144.\
+Det er verdt å merke seg at fra 1.1.2020 har vi 1108 Sandnes som består av 1102 Sandnes og 1129 Forsand. Vi har også 1103 Stavanger som består av 1103 Stavanger, 1141 Finnøy (-2019) og 1142 Rennesøy (-2019).\
+Vi ser at kommunesammenslåing blir behandlet ulikt for de to. Sandnes får nytt knr, mens Stavanger beholder sitt gamle.]{.underline}
+
+[I tillegg ble en mindre del av Forsand skilt ut og slått sammen med Strand kommune. Her vil vi se bort fra dette og legge alle arbeidstakere fra Forsand til «Nye Sandnes» (1108). Det er langt vanskeligere å håndtere en splitting av kommuner enn en sammenslåing.]{.underline}\
 
 ```{r}
 library(PxWebApiData)
-library(httr)
+library(dplyr)
 ```
+
+## Hente data fra SSB
 
 ```{r}
 #Get more info about table
@@ -29,27 +48,158 @@ returnApiQuery = TRUE
 ```
 
 ```{r}
-PxWebApiData::ApiData(
-  urlToData = "http://data.ssb.no/api/v0/en/table/00321",
-  #ArbstedKomm = 
+#| cache: true
+pend_00_21_ssb_arbNJ <- PxWebApiData::ApiData(
+  urlToData = "http://data.ssb.no/api/v0/en/table/03321",
+  # Have not been able to specify more complex regions
+  ArbstedKomm = all(),
   Bokommuen = list("1102", "1103", "1108", "1114", "1119", "1120", "1121", "1122", "1124", "1127", "1129",
 "1130", "1133", "1141", "1142", "1144"),
   Tid = c(2000:2021, each = 12)
-  
-  
+    )
+
+names(pend_00_21_ssb_arbNJ)[1] <- "desc_arbNJ"
+```
+
+```{r}
+pend_00_21_arbNJ <- pend_00_21_ssb_arbNJ$dataset %>%
+  left_join(pend_00_21_ssb_arbNJ$desc_arbNJ) %>%
+  mutate(akom_navn = 'municipality of work', bkom_navn = 'municipality of residence', akom = ArbstedKomm, bkom = Bokommuen, aar = year, pendlere = value) %>%
+  select(aar, akom, akom_navn, bkom, bkom_navn, pendlere
+) %>%
+#mangler rett på akom_navn og bkom_navn^
+as_tibble()
+
+print(pend_00_21_arbNJ, n = 5)
+```
+
+```{r}
+#| cache: true
+pend_00_21_ssb_boNJ <- PxWebApiData::ApiData(
+  urlToData = "http://data.ssb.no/api/v0/en/table/03321",
+  # Have not been able to specify more complex regions
+  ArbstedKomm = list("1102", "1103", "1108", "1114", "1119", "1120", "1121", "1122", "1124", "1127", "1129",
+"1130", "1133", "1141", "1142", "1144"),
+  Bokommuen = all(),
+  Tid = c(2000:2021, each = 12)
+    )
+
+names(pend_00_21_ssb_boNJ)[1] <- "desc_boNJ"
+```
+
+```{r}
+pend_00_21_boNJ <- pend_00_21_ssb_boNJ$dataset %>%
+  left_join(pend_00_21_ssb_boNJ$desc_boNJ) %>%
+  mutate(akom_navn = 'municipality of work', bkom_navn = 'municipality of residence', akom = ArbstedKomm, bkom = Bokommuen, aar = year, pendlere = value) %>%
+  select(aar, akom, akom_navn, bkom, bkom_navn, pendlere
+)%>%
+#mangler rett på akom_navn og bkom_navn^
+as_tibble()
+
+print(pend_00_21_boNJ, n = 5)
+```
+
+### Kommunesammenslåingene
+
+```{r}
+# knr Nord Jæren utenom kommunene som inngår i Nye Stavanger
+# og Nye Sandnes
+knr_u_SS <- paste(
+  "k",
+  c(
+    1114, 1119, 1120, 1121, 1122, 1124, 1127, 1130, 1133, 1144
+    ),
+  sep = ""
+)
+```
+
+###  Bosted Nord-Jæren
+
+```{r}
+#pend_00_21_boNJ
+pend_00_21_boNJ <- pend_00_21_boNJ %>%
+  mutate(
+    nye_bkom = case_when(
+      bkom %in% c("k1102", "k1108", "k1129") ~ "k1108",
+      bkom %in% c("k1103", "k1141", "k1142") ~ "k1103",
+      # Øvrige Nord- Jæren beholder sin bkom
+      TRUE ~ bkom
+    ),
+  nye_bkom_navn = case_when(
+    bkom %in% c("k1102", "k1108", "k1129") ~ "Sandnes",
+    bkom %in% c("k1103", "k1141", "k1142") ~ "Stavanger",
+    # Øvrige Nord- Jæren beholder sitt bkom_navn
+    TRUE ~ bkom_navn
+  ),
+  nye_akom = case_when(
+    akom %in% c("k1102", "k1108", "k1129") ~ "k1108",
+    akom %in% c("k1103", "k1141", "k1142") ~ "k1103",
+    # Øvrige Nord- Jæren beholder sin akom
+    akom %in% knr_u_SS ~ akom,
+    # Resten av landet kodes som knr "9999"
+    TRUE ~ "k9999"
+  ),
+  nye_akom_navn = case_when(
+    akom %in% c("k1102", "k1108", "k1129") ~ "Sandnes",
+    akom %in% c("k1103", "k1141", "k1142") ~ "Stavanger",
+    # Øvrige Nord- Jæren beholder sitt akom_navn
+    akom %in% knr_u_SS ~ akom_navn,
+# Resten av landet kodes som knr "RAL"
+    TRUE ~ "RAL"
+  )
 )
 ```
 
 ```{r}
-PxWebApiData::ApiData(
-  "http://data.ssb.no/api/v0/en/table/00321",
-  # Have not been able to specify more complex regions
-  Region = list("11*"),
-  Tid = c(paste(
-    rep(2000:2021, each = 12), 
-    "M",
-    sprintf("%02d", 1:12), 
-    sep = "")
-    )
+# pend_00_21_boNJ_agg
+pend_00_21_boNJ_agg <- pend_00_21_boNJ |>
+  group_by(nye_bkom, nye_akom, aar,
+nye_bkom_navn, nye_akom_navn) |>
+  summarise(pendlere = sum(pendlere)) |>
+  ungroup() |>
+  select(aar, nye_akom, nye_akom_navn, nye_bkom, nye_bkom_navn, pendlere)
+```
+
+```{r}
+pend_00_21_boNJ_agg |>
+  distinct(nye_bkom) |>
+  pull(nye_bkom)
+```
+
+```{r}
+pend_00_21_boNJ_agg |>
+  distinct(nye_akom) |>
+  pull(nye_akom)
+```
+
+### Arbeidssted Nord-Jæren
+
+```{r}
+pend_00_21_arbNJ_agg <- pend_00_21_arbNJ_agg |>
+  rename(
+    akom = nye_akom,
+    akom_navn = nye_akom_navn,
+    bkom = nye_bkom,
+    bkom_navn = nye_bkom_navn
   )
 ```
+
+## Totalt antall arbeidstakere i hele landet per år
+
+## Bor og jobber i samme kommune på Nord-Jæren 
+
+### Internpendling et utvalg kommuner Hvor jobber folk bosatt i Stavanger kommune? Hvor jobber folk bosatt i Sandnes kommune? Hvor jobber folk bosatt i Sola kommune? Hvor jobber folk bosatt i Randaberg kommune? Hvor jobber folk bosatt i Klepp kommune? Hvor jobber folk bosatt i Time kommune? Hvor jobber folk bosatt i Gjesdal kommune? 
+
+### Hvor jobber folk bosatt i Hå kommune? Hvor jobber folk bosatt i Bjerkreim kommune? Hvor jobber folk bosatt i Strand kommune? Hvor stor pendling er det fra resten av landet til Nord-Jæren? 
+
+## Pendlematriser
+
+###  2000
+
+### 2005
+
+### 2010
+
+### 2015
+
+### 2021
