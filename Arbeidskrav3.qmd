@@ -39,6 +39,11 @@ returnMetaFrames = TRUE
 )
 ```
 
+Det vi gjør her er at vi henter in data i R, fra SSB (statistisk sentralbyrå).
+Vi henter data fra statistikktabell 03321.
+
+Den første rammen viser, kode
+
 ```{r}
 #Get more info about table
 ApiData(
@@ -113,7 +118,7 @@ knr_u_SS <- paste(
 )
 ```
 
-###  Bosted Nord-Jæren
+### Bosted Nord-Jæren
 
 ```{r}
 #pend_00_21_boNJ
@@ -186,15 +191,15 @@ pend_00_21_arbNJ_agg <- pend_00_21_arbNJ_agg |>
 
 ## Totalt antall arbeidstakere i hele landet per år
 
-## Bor og jobber i samme kommune på Nord-Jæren 
+## Bor og jobber i samme kommune på Nord-Jæren
 
-### Internpendling et utvalg kommuner Hvor jobber folk bosatt i Stavanger kommune? Hvor jobber folk bosatt i Sandnes kommune? Hvor jobber folk bosatt i Sola kommune? Hvor jobber folk bosatt i Randaberg kommune? Hvor jobber folk bosatt i Klepp kommune? Hvor jobber folk bosatt i Time kommune? Hvor jobber folk bosatt i Gjesdal kommune? 
+### Internpendling et utvalg kommuner Hvor jobber folk bosatt i Stavanger kommune? Hvor jobber folk bosatt i Sandnes kommune? Hvor jobber folk bosatt i Sola kommune? Hvor jobber folk bosatt i Randaberg kommune? Hvor jobber folk bosatt i Klepp kommune? Hvor jobber folk bosatt i Time kommune? Hvor jobber folk bosatt i Gjesdal kommune?
 
-### Hvor jobber folk bosatt i Hå kommune? Hvor jobber folk bosatt i Bjerkreim kommune? Hvor jobber folk bosatt i Strand kommune? Hvor stor pendling er det fra resten av landet til Nord-Jæren? 
+### Hvor jobber folk bosatt i Hå kommune? Hvor jobber folk bosatt i Bjerkreim kommune? Hvor jobber folk bosatt i Strand kommune? Hvor stor pendling er det fra resten av landet til Nord-Jæren?
 
 ## Pendlematriser
 
-###  2000
+### 2000
 
 ### 2005
 
