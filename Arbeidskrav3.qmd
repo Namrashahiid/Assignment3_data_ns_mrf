@@ -189,7 +189,40 @@ pend_00_21_arbNJ_agg <- pend_00_21_arbNJ_agg |>
   )
 ```
 
-## Totalt antall arbeidstakere i hele landet per år
+## Totalt antall arbeidstakere i hele landet per år:
+
+```{r}
+fnr <- c(
+  "30", "01", "02", "06", "03", "34", "04", "05", "38", "07", "08", "42"
+, "09", "10", "11", "46", "12", "14", "15", "50", "16", "17", "18", "54", "19", "20"
+)
+```
+
+```{# A tibble: 22 x 2}
+aar arbtak_HL
+<chr> <int>
+1 2000 2262000
+2 2001 2275000
+3 2002 2267000
+4 2003 2260000
+5 2004 2274000
+# ... with 17 more rows
+```
+
+Definer Nord-Jæren (NJ)
+
+```{r}
+NJ <- c(knr_u_SS, "k1103", "k1108")
+```
+
+Legger antall som bor på Nord-Jæren og jobber utenfor region i bNJjHL
+
+```{r}
+bNJjHL <- pend_00_21 %>%
+  filter(bkom %in% NJ) %>%
+  group_by(aar) %>%
+  summarise(pendlere_bNJjHL = sum(pendlere))
+```
 
 ## Bor og jobber i samme kommune på Nord-Jæren
 
