@@ -224,6 +224,27 @@ bNJjHL <- pend_00_21 %>%
   summarise(pendlere_bNJjHL = sum(pendlere))
 ```
 
+Bor RAL jobber på NJ
+
+```{r}
+tot_arb_HL <- left_join(tot_arb_HL, bNJjHL)
+tot_arb_HL <- left_join(tot_arb_HL, bNJjHL)
+```
+
+```{r}
+# pendlematrise 2005, bo Nord-Jæren
+pend_00_21_boNJ_agg |>
+  ungroup() |>
+  filter(aar == "2010") |>
+  select(bkom, akom, pendlere) |>
+  pivot_wider(
+    names_from = akom,
+    values_from = pendlere
+  ) |>
+  as.data.frame() |>
+  print(width = 110)
+```
+
 ## Bor og jobber i samme kommune på Nord-Jæren
 
 ### Internpendling et utvalg kommuner Hvor jobber folk bosatt i Stavanger kommune? Hvor jobber folk bosatt i Sandnes kommune? Hvor jobber folk bosatt i Sola kommune? Hvor jobber folk bosatt i Randaberg kommune? Hvor jobber folk bosatt i Klepp kommune? Hvor jobber folk bosatt i Time kommune? Hvor jobber folk bosatt i Gjesdal kommune?
