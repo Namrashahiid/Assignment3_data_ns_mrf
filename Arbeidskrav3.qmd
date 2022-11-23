@@ -198,16 +198,7 @@ fnr <- c(
 )
 ```
 
-```{# A tibble: 22 x 2}
-aar arbtak_HL
-<chr> <int>
-1 2000 2262000
-2 2001 2275000
-3 2002 2267000
-4 2003 2260000
-5 2004 2274000
-# ... with 17 more rows
-```
+`{# A tibble: 22 x 2} aar arbtak_HL <chr> <int> 1 2000 2262000 2 2001 2275000 3 2002 2267000 4 2003 2260000 5 2004 2274000 # ... with 17 more rows`
 
 Definer Nord-Jæren (NJ)
 
@@ -218,7 +209,7 @@ NJ <- c(knr_u_SS, "k1103", "k1108")
 Legger antall som bor på Nord-Jæren og jobber utenfor region i bNJjHL
 
 ```{r}
-bNJjHL <- pend_00_21 %>%
+bNJjHL <- pend_00_21_boNJ_agg %>%
   filter(bkom %in% NJ) %>%
   group_by(aar) %>%
   summarise(pendlere_bNJjHL = sum(pendlere))
@@ -244,6 +235,58 @@ pend_00_21_boNJ_agg |>
   as.data.frame() |>
   print(width = 110)
 ```
+
+```{r}
+totalt_arb <- pend_00_21 |>
+group_by(aar, akom, akom_navn) |>
+summarise(pendlere = sum(pendlere)) |>
+mutate(
+bkom = "k0000",
+bkom_navn = "Totalt_arb"
+)
+```
+
+```{r}
+totalt_bo <- pend_00_21 |>
+group_by(aar, bkom, bkom_navn) |>
+summarise(pendlere = sum(pendlere)) |>
+mutate(
+akom = "k0000",
+akom_navn = "Totalt_bo"
+)
+```
+
+Bruker nå bind_rows() for å nå legge inn datene
+
+```{r}
+dim(pend_00_21_boNJ_agg)
+```
+
+```{r}
+names(pend_00_21_boNJ_agg)
+```
+
+```{r}
+print(pend_00_21_boNJ_agg, n = 5)
+```
+
+Vi kan også regne ut andel av arbeidstakerne som bor i en kommune, som jobber i de ulike kommunene:
+
+```{r}
+dim(andel_pend_00_21_boNJ_agg)
+```
+
+```{r}
+names(andel_pend_00_21_boNJ_agg)
+```
+
+```{r}
+print(andel_pend_00_21_boNJ_agg)
+```
+
+Nå skal vi long før plot:
+
+gjør resten imorgen
 
 ## Bor og jobber i samme kommune på Nord-Jæren
 
