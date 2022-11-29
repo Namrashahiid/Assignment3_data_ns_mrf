@@ -180,13 +180,41 @@ pend_00_21_boNJ_agg |>
 ### Arbeidssted Nord-Jæren
 
 ```{r}
-pend_00_21_arbNJ_agg <- pend_00_21_arbNJ_agg |>
+pend_00_21_arbNJ <- pend_00_21_arbNJ |>
   rename(
     akom = nye_akom,
     akom_navn = nye_akom_navn,
     bkom = nye_bkom,
     bkom_navn = nye_bkom_navn
   )
+```
+
+```{r}
+names(pend_00_21_arbNJ)
+```
+
+Her finner vi forskjellige navn på datasettet arbNJ
+
+```{r}
+names(pend_00_21_boNJ_agg)
+```
+
+Her finner vi ytterligere navn på datasettet boNJ
+
+```{r}
+boNJ_arb_RAL <- pend_00_21_boNJ_agg |>
+  filter(akom == "k9999")
+
+pend_00_21 <- bind_rows(
+  pend_00_21_arbNJ,
+  boNJ_arb_RAL)
+```
+
+Det vi har gjor her er at vi har slått sammen begge datasettene, i dette tilfelle: pend_00_21_arbNJ_agg og pend_00_21_boNJ_agg.
+
+```{r}
+rm(boNJ_arb_RAL, pend_00_21_arbNJ, pend_00_21_boNJ, pend_00_21_ssb_arbNJ, pend_00_21_ssb_boNJ
+   )
 ```
 
 ## Totalt antall arbeidstakere i hele landet per år:
