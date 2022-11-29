@@ -226,9 +226,24 @@ fnr <- c(
 )
 ```
 
-`{# A tibble: 22 x 2} aar arbtak_HL <chr> <int> 1 2000 2262000 2 2001 2275000 3 2002 2267000 4 2003 2260000 5 2004 2274000 # ... with 17 more rows`
+Oppe ser vi at vi har hentet data fra tabell: 11616.
+Denne gir oss data data på fylke-basis.
+Det vi gjorde var at vi hentet data for årene 2000-2021, for begge kjønn.
+Vi fant dataen for alderen 15-74 år.
+Vi fant data utifra hvor arbeidstakerne er bosatt.
+Det intensjonen her er totalt antall arbeidstakere per år.
 
-Definer Nord-Jæren (NJ)
+```{r}
+ApiData(11616)
+```
+
+Øverst ser vi at vi har nå funnet opplysninger fra tabell 11616 ved hjelp av ApiData()
+
+`# A tibble: 22 x 2} aar arbtak_HL <chr> <int> 1 2000 2262000 2 2001 2275000 3 2002 2267000 4 2003 2260000 5 2004 2274000 # ... with 17 more rows`
+
+**Bor NJ jobber HL**
+
+Definerer Nord-Jæren (NJ)
 
 ```{r}
 NJ <- c(knr_u_SS, "k1103", "k1108")
@@ -243,7 +258,7 @@ bNJjHL <- pend_00_21_boNJ_agg %>%
   summarise(pendlere_bNJjHL = sum(pendlere))
 ```
 
-Bor RAL jobber på NJ
+**Bor RAL jobber på NJ**
 
 ```{r}
 tot_arb_HL <- left_join(tot_arb_HL, bNJjHL)
