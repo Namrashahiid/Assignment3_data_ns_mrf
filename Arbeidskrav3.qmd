@@ -27,6 +27,8 @@ Vi ser at kommunesammenslåing blir behandlet ulikt for de to. Sandnes får nytt
 ```{r}
 library(PxWebApiData)
 library(dplyr)
+library(ggplot2)
+library(parallel)
 ```
 
 ## Hente data fra SSB
@@ -45,22 +47,20 @@ Vi henter data fra statistikktabell 03321.
 Den første rammen viser, kode
 
 ```{r}
-#Get more info about table
-ApiData(
-"http://data.ssb.no/api/v0/en/table/03321",
-returnApiQuery = TRUE
-)
+#gererate knr
+knr <- paste(
+  "k",
+  c(1102, 1103, 1108, 1114, 1119, 1120, 1121,1122, 1124, 1127, 1129, 1130, 1133, 1141, 1142, 1144),
+  sep = ""
+  )
 ```
 
 ```{r}
-#| cache: true
-pend_00_21_ssb_arbNJ <- PxWebApiData::ApiData(
-  urlToData = "http://data.ssb.no/api/v0/en/table/03321",
-  # Have not been able to specify more complex regions
-  ArbstedKomm = all(),
-  Bokommuen = list("1102", "1103", "1108", "1114", "1119", "1120", "1121", "1122", "1124", "1127", "1129",
-"1130", "1133", "1141", "1142", "1144"),
-  Tid = c(2000:2021, each = 12)
+pend_00_21_ssb_arbNJ <- ApiData(
+  urlToData = "03321",
+  #ArbstedKomm = knr,
+  Bokommuen = list('*'),
+  Tid = as.character(2000:2021)
     )
 
 names(pend_00_21_ssb_arbNJ)[1] <- "desc_arbNJ"
@@ -79,14 +79,11 @@ print(pend_00_21_arbNJ, n = 5)
 ```
 
 ```{r}
-#| cache: true
-pend_00_21_ssb_boNJ <- PxWebApiData::ApiData(
-  urlToData = "http://data.ssb.no/api/v0/en/table/03321",
-  # Have not been able to specify more complex regions
-  ArbstedKomm = list("1102", "1103", "1108", "1114", "1119", "1120", "1121", "1122", "1124", "1127", "1129",
-"1130", "1133", "1141", "1142", "1144"),
-  Bokommuen = all(),
-  Tid = c(2000:2021, each = 12)
+pend_00_21_ssb_boNJ <- ApiData(
+  urlToData = "03321",
+  ArbstedKomm = list('*'),
+  #Bokommuen = knr,
+  Tid = as.character(2000:2021)
     )
 
 names(pend_00_21_ssb_boNJ)[1] <- "desc_boNJ"
