@@ -47,6 +47,7 @@ Vi henter data fra statistikktabell 03321.
 Den første rammen viser, kode
 
 ```{r}
+#| cache: true
 #gererate knr
 # Må være en character vector for at SSB skal skjønne hva vi spør etter
 knr <- as.character(c(1102, 1103, 1108, 1114, 1119, 1120, 1121,1122, 1124, 
@@ -58,8 +59,8 @@ knr <- as.character(c(1102, 1103, 1108, 1114, 1119, 1120, 1121,1122, 1124,
 tid <- as.character(2000:2021)
 ```
 
-
 ```{r}
+#| cache: true
 pend_00_21_ssb_arbNJ <- ApiData(
   urlToData = "03321",
   ArbstedKomm = knr,
@@ -72,11 +73,10 @@ pend_00_21_ssb_arbNJ <- ApiData(
 names(pend_00_21_ssb_arbNJ)[1] <- "desc_arbNJ"
 ```
 
-
 ```{r}
+#| cache: true
 pend_00_21_arbNJ <- pend_00_21_ssb_arbNJ$dataset %>%
-# Neste vil gi en enorm matrise der alle kombinasjoner blir forsøkt generert
-#  left_join(pend_00_21_ssb_arbNJ$desc_arbNJ) %>%
+  
 # Observasjonene i dataset og desc_ komponenten er ordnet i samme rekkefølge 
 #  så vi trenger bare hente variablen
   rename(
@@ -89,11 +89,9 @@ pend_00_21_arbNJ <- pend_00_21_ssb_arbNJ$dataset %>%
     bkom = paste("k", Bokommuen, sep = ""),
     pendlere = value,
   ) %>% 
-#  mutate(akom_navn = 'municipality of work', bkom_navn = 'municipality of residence', 
-#          akom = ArbstedKomm, bkom = Bokommuen, aar = year, pendlere = value) %>%
+
   select(aar, akom, akom_navn, bkom, bkom_navn, pendlere) %>%
-  #mangler rett på akom_navn og bkom_navn
-  # nå bør ting virke
+
   as_tibble()
 ```
 
@@ -101,8 +99,8 @@ pend_00_21_arbNJ <- pend_00_21_ssb_arbNJ$dataset %>%
 print(pend_00_21_arbNJ, n = 5)
 ```
 
-
 ```{r}
+#| cache: true
 pend_00_21_ssb_boNJ <- ApiData(
   urlToData = "03321",
   ArbstedKomm = list('*'),
@@ -116,6 +114,7 @@ names(pend_00_21_ssb_boNJ)[1] <- "desc_boNJ"
 ```
 
 ```{r}
+#| cache: true
 # Lager pend_00_21_boNJ fra pend_00_21_ssb_boNJ
 pend_00_21_boNJ <- pend_00_21_ssb_boNJ$dataset %>% 
   # Henter kommune navn fra desc_boNJ df
@@ -134,18 +133,25 @@ pend_00_21_boNJ <- pend_00_21_ssb_boNJ$dataset %>%
   as_tibble()
 ```
 
-
 ```{r}
 #| eval: false
 #| echo: false
 # Denne virker ikke. Se ovenfor for kode
 pend_00_21_boNJ <- pend_00_21_ssb_boNJ$dataset %>%
-  left_join(pend_00_21_ssb_boNJ$desc_boNJ) %>%
-  mutate(akom_navn = 'municipality of work', bkom_navn = 'municipality of residence', akom = ArbstedKomm, bkom = Bokommuen, aar = year, pendlere = value) %>%
-  select(aar, akom, akom_navn, bkom, bkom_navn, pendlere
-)%>%
-#mangler rett på akom_navn og bkom_navn^
-as_tibble()
+  #left_join(pend_00_21_ssb_boNJ$desc_boNJ) %>%
+  rename(
+    aar = Tid
+  ) %>%
+  mutate(akom_navn = pend_00_21_ssb_boNJ$desc_boNJ$arbeidsstedskommune, 
+         bkom_navn = pend_00_21_ssb_boNJ$desc_boNJ$bostedskommune, 
+         akom = paste("k", ArbstedKomm, sep = ""),
+         bkom = paste("k", Bokommuen, sep = ""),
+         pendlere = value,
+      ) %>%
+  
+  select(aar, akom, akom_navn, bkom, bkom_navn, pendlere) %>%
+
+  as_tibble()
 ```
 
 ```{r}
@@ -207,15 +213,11 @@ pend_00_21_boNJ <- pend_00_21_boNJ %>%
 # pend_00_21_boNJ_agg
 pend_00_21_boNJ_agg <- pend_00_21_boNJ |>
   group_by(nye_bkom, nye_akom, aar,
-nye_bkom_navn, nye_akom_navn) |>
+          nye_bkom_navn, nye_akom_navn) |>
   summarise(pendlere = sum(pendlere)) |>
   ungroup() |>
   select(aar, nye_akom, nye_akom_navn, nye_bkom, nye_bkom_navn, pendlere)
 ```
-
-# AG: Ned til her bør ting virke
-
-AG: Da har dere de to innledenen datasettene for hhv. bor og jobber på Nord-Jæren. Dere må så rekode akom, akom_navn, bkom og bkom_navn for å ta hensyn til kommunesammenslåingene. Se bruk av case_when i oppgaveteksten.
 
 ```{r}
 pend_00_21_boNJ_agg |>
@@ -232,7 +234,58 @@ pend_00_21_boNJ_agg |>
 ### Arbeidssted Nord-Jæren
 
 ```{r}
-pend_00_21_arbNJ <- pend_00_21_arbNJ |>
+#pend_00_21_arbNJ
+pend_00_21_arbNJ <- pend_00_21_arbNJ %>%
+  mutate(
+    nye_bkom = case_when(
+      bkom %in% c("k1102", "k1108", "k1129") ~ "k1108",
+      bkom %in% c("k1103", "k1141", "k1142") ~ "k1103",
+      # Øvrige Nord- Jæren beholder sin bkom
+      TRUE ~ bkom
+    ),
+  nye_bkom_navn = case_when(
+    bkom %in% c("k1102", "k1108", "k1129") ~ "Sandnes",
+    bkom %in% c("k1103", "k1141", "k1142") ~ "Stavanger",
+    # Øvrige Nord- Jæren beholder sitt bkom_navn
+    TRUE ~ bkom_navn
+  ),
+  nye_akom = case_when(
+    akom %in% c("k1102", "k1108", "k1129") ~ "k1108",
+    akom %in% c("k1103", "k1141", "k1142") ~ "k1103",
+    # Øvrige Nord- Jæren beholder sin akom
+    akom %in% knr_u_SS ~ akom,
+    # Resten av landet kodes som knr "9999"
+    TRUE ~ "k9999"
+  ),
+  nye_akom_navn = case_when(
+    akom %in% c("k1102", "k1108", "k1129") ~ "Sandnes",
+    akom %in% c("k1103", "k1141", "k1142") ~ "Stavanger",
+    # Øvrige Nord- Jæren beholder sitt akom_navn
+    akom %in% knr_u_SS ~ akom_navn,
+# Resten av landet kodes som knr "RAL"
+    TRUE ~ "RAL"
+  )
+)
+```
+
+```{r}
+# pend_00_21_arbNJ_agg
+pend_00_21_arbNJ_agg <- pend_00_21_arbNJ |>
+  group_by(nye_bkom, nye_akom, aar,
+          nye_bkom_navn, nye_akom_navn) |>
+  summarise(pendlere = sum(pendlere)) |>
+  ungroup() |>
+  select(aar, nye_akom, nye_akom_navn, nye_bkom, nye_bkom_navn, pendlere)
+```
+
+```{r}
+pend_00_21_arbNJ_agg |>
+  distinct(nye_bkom) |>
+  pull(nye_bkom)
+```
+
+```{r}
+pend_00_21_arbNJ_agg <- pend_00_21_arbNJ |>
   # For rename() er syntaksen nytt_navn = gammelt_navn
   rename(
     nye_akom = akom,
@@ -256,10 +309,10 @@ Her finner vi ytterligere navn på datasettet boNJ
 
 ```{r}
 boNJ_arb_RAL <- pend_00_21_boNJ_agg |>
-  filter(akom == "k9999")
+  filter(nye_akom == "k9999")
 
 pend_00_21 <- bind_rows(
-  pend_00_21_arbNJ,
+  pend_00_21_arbNJ_agg,
   boNJ_arb_RAL)
 ```
 
