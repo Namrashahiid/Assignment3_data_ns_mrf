@@ -365,6 +365,12 @@ ApiData(11616)
 
 Øverst ser vi at vi har nå funnet opplysninger fra tabell 11616 ved hjelp av ApiData()
 
+```{r}
+as_tibble(11616)
+tid
+NJ
+```
+
 `# A tibble: 22 x 2} aar arbtak_HL <chr> <int> 1 2000 2262000 2 2001 2275000 3 2002 2267000 4 2003 2260000 5 2004 2274000 # ... with 17 more rows`
 
 **Bor NJ jobber HL**
@@ -378,7 +384,7 @@ NJ <- c(knr_u_SS, "k1103", "k1108")
 Legger antall som bor på Nord-Jæren og jobber utenfor region i bNJjHL
 
 ```{r}
-bNJjHL <- pend_00_21_boNJ_agg %>%
+bNJjHL <- pend_00_21 %>%
   filter(bkom %in% NJ) %>%
   group_by(aar) %>%
   summarise(pendlere_bNJjHL = sum(pendlere))
@@ -388,7 +394,11 @@ bNJjHL <- pend_00_21_boNJ_agg %>%
 
 ```{r}
 tot_arb_HL <- left_join(tot_arb_HL, bNJjHL)
-tot_arb_HL <- left_join(tot_arb_HL, bNJjHL)
+tot_arb_HL <- left_join(tot_arb_HL, bRALjNL)
+```
+
+```{r}
+pend_00_21 <- bind_rows(pend_00_21, p_bRALjRAL)
 ```
 
 ```{r}
