@@ -136,9 +136,7 @@ pend_00_21_boNJ <- pend_00_21_ssb_boNJ$dataset %>%
 ```{r}
 #| eval: false
 #| echo: false
-# Denne virker ikke. Se ovenfor for kode
 pend_00_21_boNJ <- pend_00_21_ssb_boNJ$dataset %>%
-  #left_join(pend_00_21_ssb_boNJ$desc_boNJ) %>%
   rename(
     aar = Tid
   ) %>%
@@ -231,37 +229,43 @@ pend_00_21_boNJ_agg |>
   pull(nye_akom)
 ```
 
+```{r}
+pend_00_21_boNJ_agg |>
+  distinct(nye_akom_navn) |>
+  pull(nye_akom_navn)
+```
+
 ### Arbeidssted Nord-Jæren
 
 ```{r}
 #pend_00_21_arbNJ
 pend_00_21_arbNJ <- pend_00_21_arbNJ %>%
   mutate(
-    nye_bkom = case_when(
-      bkom %in% c("k1102", "k1108", "k1129") ~ "k1108",
-      bkom %in% c("k1103", "k1141", "k1142") ~ "k1103",
-      # Øvrige Nord- Jæren beholder sin bkom
-      TRUE ~ bkom
+    nye_akom = case_when(
+      akom %in% c("k1102", "k1108", "k1129") ~ "k1108",
+      akom %in% c("k1103", "k1141", "k1142") ~ "k1103",
+      # Øvrige Nord- Jæren beholder sin akom
+      TRUE ~ akom
     ),
+  nye_akom_navn = case_when(
+    bkom %in% c("k1102", "k1108", "k1129") ~ "Sandnes",
+    bkom %in% c("k1103", "k1141", "k1142") ~ "Stavanger",
+    # Øvrige Nord- Jæren beholder sitt akom_navn
+    TRUE ~ akom_navn
+  ),
+  nye_bkom = case_when(
+    bkom %in% c("k1102", "k1108", "k1129") ~ "k1108",
+    bkom %in% c("k1103", "k1141", "k1142") ~ "k1103",
+    # Øvrige Nord- Jæren beholder sin bkom
+    bkom %in% knr_u_SS ~ bkom,
+    # Resten av landet kodes som knr "9999"
+    TRUE ~ "k9999"
+  ),
   nye_bkom_navn = case_when(
     bkom %in% c("k1102", "k1108", "k1129") ~ "Sandnes",
     bkom %in% c("k1103", "k1141", "k1142") ~ "Stavanger",
     # Øvrige Nord- Jæren beholder sitt bkom_navn
-    TRUE ~ bkom_navn
-  ),
-  nye_akom = case_when(
-    akom %in% c("k1102", "k1108", "k1129") ~ "k1108",
-    akom %in% c("k1103", "k1141", "k1142") ~ "k1103",
-    # Øvrige Nord- Jæren beholder sin akom
-    akom %in% knr_u_SS ~ akom,
-    # Resten av landet kodes som knr "9999"
-    TRUE ~ "k9999"
-  ),
-  nye_akom_navn = case_when(
-    akom %in% c("k1102", "k1108", "k1129") ~ "Sandnes",
-    akom %in% c("k1103", "k1141", "k1142") ~ "Stavanger",
-    # Øvrige Nord- Jæren beholder sitt akom_navn
-    akom %in% knr_u_SS ~ akom_navn,
+    bkom %in% knr_u_SS ~ bkom_navn,
 # Resten av landet kodes som knr "RAL"
     TRUE ~ "RAL"
   )
@@ -280,23 +284,38 @@ pend_00_21_arbNJ_agg <- pend_00_21_arbNJ |>
 
 ```{r}
 pend_00_21_arbNJ_agg |>
+  distinct(nye_akom) |>
+  pull(nye_akom)
+```
+
+```{r}
+pend_00_21_arbNJ_agg |>
   distinct(nye_bkom) |>
   pull(nye_bkom)
 ```
 
 ```{r}
-pend_00_21_arbNJ_agg <- pend_00_21_arbNJ |>
-  # For rename() er syntaksen nytt_navn = gammelt_navn
+pend_00_21_arbNJ_agg <- pend_00_21_arbNJ_agg |>
   rename(
-    nye_akom = akom,
-    nye_akom_navn = akom_navn,
-    nye_bkom = bkom,
-    nye_bkom_navn = bkom_navn
+    akom = nye_akom,
+    akom_navn = nye_akom_navn,
+    bkom = nye_bkom,
+    bkom_navn = nye_bkom_navn 
   )
 ```
 
 ```{r}
-names(pend_00_21_arbNJ)
+pend_00_21_boNJ_agg <- pend_00_21_boNJ_agg |>
+  rename(
+    akom = nye_akom,
+    akom_navn = nye_akom_navn,
+    bkom = nye_bkom,
+    bkom_navn = nye_bkom_navn 
+  )
+```
+
+```{r}
+names(pend_00_21_arbNJ_agg)
 ```
 
 Her finner vi forskjellige navn på datasettet arbNJ
@@ -309,7 +328,7 @@ Her finner vi ytterligere navn på datasettet boNJ
 
 ```{r}
 boNJ_arb_RAL <- pend_00_21_boNJ_agg |>
-  filter(nye_akom == "k9999")
+  filter(akom == "k9999")
 
 pend_00_21 <- bind_rows(
   pend_00_21_arbNJ_agg,
@@ -341,6 +360,7 @@ Det intensjonen her er totalt antall arbeidstakere per år.
 
 ```{r}
 ApiData(11616)
+
 ```
 
 Øverst ser vi at vi har nå funnet opplysninger fra tabell 11616 ved hjelp av ApiData()
