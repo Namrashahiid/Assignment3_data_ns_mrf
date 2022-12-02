@@ -11,7 +11,7 @@ editor: visual
 
 ## Innledning
 
-I denne oppgaven skal vi studere pendle-mønster for regionen Sør-Rogaland (Nord_Jæren)...
+I denne oppgaven skal vi studere pendle-mønster for regionen Sør-Rogaland (Nord_Jæren).
 
 ### Kommuner Sør-Rogaland 2018
 
