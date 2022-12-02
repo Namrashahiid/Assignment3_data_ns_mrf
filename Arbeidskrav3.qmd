@@ -29,6 +29,7 @@ library(PxWebApiData)
 library(dplyr)
 library(ggplot2)
 library(parallel)
+library(tidyverse)
 ```
 
 ## Hente data fra SSB
@@ -344,13 +345,6 @@ rm(boNJ_arb_RAL, pend_00_21_arbNJ, pend_00_21_boNJ, pend_00_21_ssb_arbNJ, pend_0
 
 ## Totalt antall arbeidstakere i hele landet per år:
 
-```{r}
-fnr <- c(
-  "30", "01", "02", "06", "03", "34", "04", "05", "38", "07", "08", "42"
-, "09", "10", "11", "46", "12", "14", "15", "50", "16", "17", "18", "54", "19", "20"
-)
-```
-
 Oppe ser vi at vi har hentet data fra tabell: 11616.
 Denne gir oss data data på fylke-basis.
 Det vi gjorde var at vi hentet data for årene 2000-2021, for begge kjønn.
@@ -359,19 +353,74 @@ Vi fant data utifra hvor arbeidstakerne er bosatt.
 Det intensjonen her er totalt antall arbeidstakere per år.
 
 ```{r}
-ApiData(11616)
+ApiData(
+"http://data.ssb.no/api/v0/en/table/11616",
+returnMetaFrames = TRUE
+)
+```
 
+```{r}
+Tid <- as.character(2000:2021)
+```
+
+```{r}
+value <- as.character
+```
+
+```{r}
+ApiData(11616)
+```
+
+```{r}
+names(arbeidstakere)[1] <- "desc_arbHL"
+```
+
+```{r}
+arbeidstakereHL <- arbeidstakere$dataset %>%
+  rename(
+    aar = Tid,
+  ) %>% 
+  mutate(
+    fnr = arbeidstakere$dataset$Region,
+    tot_arb_HL1 = arbeidstakere$desc_arbHL$value
+  ) %>% 
+
+  select(aar, fnr, tot_arb_HL1) %>%
+
+  as_tibble()
+```
+
+```{r}
+#arbeidstakereHL %>%
+#group_by(aar, fnr)
+```
+
+```{r}
+arbeidstakereHL_ny <- arbeidstakereHL |>
+  group_by(aar, fnr) |>
+  summarise(tot_arb_HL = sum(tot_arb_HL1), by = aar) |>
+  ungroup() |>
+  select(aar, tot_arb_HL)|>
+  group_by(aar, tot_arb_HL) |>
+  summarise(tot_arb_HL = sum(tot_arb_HL), by = aar)
+
+```
+
+```{r}
+arbeidstakereHL_ny[!duplicated(arbeidstakereHL_ny$tot_arb_HL), ]
+```
+
+```{r}
+print(arbeidstakereHL_ny)
 ```
 
 Øverst ser vi at vi har nå funnet opplysninger fra tabell 11616 ved hjelp av ApiData()
 
 ```{r}
-as_tibble(11616)
-tid
-NJ
+#as_tibble(11616)
+#tid
+#NJ
 ```
-
-`# A tibble: 22 x 2} aar arbtak_HL <chr> <int> 1 2000 2262000 2 2001 2275000 3 2002 2267000 4 2003 2260000 5 2004 2274000 # ... with 17 more rows`
 
 **Bor NJ jobber HL**
 
