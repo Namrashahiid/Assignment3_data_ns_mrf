@@ -626,7 +626,7 @@ theme(legend.position = 'bottom') +
 ggtitle("Intern pendling")
 ```
 
-### Hvor jobber folk bosatt i Stavanger kommune?
+### Hvor jobber folk bosatt i Stavanger kommune?.
 
 ```{r}
 andel_pendle_data_00_21_long |>
