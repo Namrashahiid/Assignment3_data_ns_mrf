@@ -571,7 +571,7 @@ names(andel_pendle_data_00_21_long)
 print(andel_pendle_data_00_21_long, n = 5)
 ```
 
-### Internpendling et utvalg kommuner 
+### Internpendling et utvalg kommuner
 
 ```{r}
 andel_pendle_data_00_21_long |>
@@ -604,7 +604,7 @@ arrange(desc(andel)) |>
 head(n = 5)
 ```
 
-### Hvor jobber folk bosatt i Sandnes kommune?  
+### Hvor jobber folk bosatt i Sandnes kommune?
 
 ```{r}
 andel_pendle_data_00_21_long |>
@@ -615,7 +615,7 @@ arrange(desc(andel)) |>
 head(n = 5)
 ```
 
-### Hvor jobber folk bosatt i Sola kommune? 
+### Hvor jobber folk bosatt i Sola kommune?
 
 ```{r}
 andel_pendle_data_00_21_long |>
@@ -626,7 +626,7 @@ arrange(desc(andel)) |>
 head(n = 5)
 ```
 
-### Hvor jobber folk bosatt i Randaberg kommune? 
+### Hvor jobber folk bosatt i Randaberg kommune?
 
 ```{r}
 andel_pendle_data_00_21_long |>
@@ -637,7 +637,7 @@ arrange(desc(andel)) |>
 head(n = 5)
 ```
 
-### Hvor jobber folk bosatt i Klepp kommune? 
+### Hvor jobber folk bosatt i Klepp kommune?
 
 ```{r}
 andel_pendle_data_00_21_long |>
@@ -648,7 +648,7 @@ arrange(desc(andel)) |>
 head(n = 5)
 ```
 
-### Hvor jobber folk bosatt i Time kommune? 
+### Hvor jobber folk bosatt i Time kommune?
 
 ```{r}
 andel_pendle_data_00_21_long |>
@@ -670,7 +670,7 @@ arrange(desc(andel)) |>
 head(n = 5)
 ```
 
-### Hvor jobber folk bosatt i Hå kommune? 
+### Hvor jobber folk bosatt i Hå kommune?
 
 ```{r}
 andel_pendle_data_00_21_long |>
@@ -681,7 +681,7 @@ arrange(desc(andel)) |>
 head(n = 5)
 ```
 
-### Hvor jobber folk bosatt i Bjerkreim kommune? 
+### Hvor jobber folk bosatt i Bjerkreim kommune?
 
 ```{r}
 andel_pendle_data_00_21_long |>
@@ -692,7 +692,7 @@ arrange(desc(andel)) |>
 head(n = 5)
 ```
 
-### Hvor jobber folk bosatt i Strand kommune? 
+### Hvor jobber folk bosatt i Strand kommune?
 
 ```{r}
 andel_pendle_data_00_21_long |>
