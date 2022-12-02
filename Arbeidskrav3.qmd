@@ -15,7 +15,7 @@ I denne oppgaven skal vi studere pendle-mønster for regionen Sør-Rogaland (Nor
 
 ### Kommuner Sør-Rogaland 2018
 
-[Fra oppgavetekst: Vi definerer Nord-Jæren som følgende kommuner. Vi tar med både de «gamle» og «nye». Disse kommunene vil bare inneholde data for de årene de har eksistert.\
+[Vi definerer Nord-Jæren som følgende kommuner. Vi tar med både de «gamle» og «nye». Disse kommunene vil bare inneholde data for de årene de har eksistert.\
 Sandnes (-2019), Stavanger, Nye-Sandnes, Bjerkreim, Hå, Klepp, Time, Gjesdal, Sola, Randaberg, Forsand (-2019), Strand, Hjelmeland, Finnøy (-2019), Rennesøy (-2019), Kvitsøy.\
 De korresponderende kommune-numrene er:\
 1102, 1103, 1108, 1114, 1119, 1120, 1121,1122, 1124, 1127, 1129, 1130, 1133, 1141, 1142, 1144.\
@@ -345,7 +345,7 @@ rm(boNJ_arb_RAL, pend_00_21_arbNJ, pend_00_21_boNJ, pend_00_21_ssb_arbNJ, pend_0
 
 ## Totalt antall arbeidstakere i hele landet per år:
 
-Oppe ser vi at vi har hentet data fra tabell: 11616.
+Over ser vi at vi har hentet data fra tabell: 11616.
 Denne gir oss data data på fylke-basis.
 Det vi gjorde var at vi hentet data for årene 2000-2021, for begge kjønn.
 Vi fant dataen for alderen 15-74 år.
@@ -353,74 +353,39 @@ Vi fant data utifra hvor arbeidstakerne er bosatt.
 Det intensjonen her er totalt antall arbeidstakere per år.
 
 ```{r}
-ApiData(
+tot_arb_HL <- ApiData(
 "http://data.ssb.no/api/v0/en/table/11616",
-returnMetaFrames = TRUE
+  Region = list("*"),
+  Alder = list("15-74*"),
+  Kjonn = list("*"),
+  ContentsCode = list("Bosatt*"),
+  Tid = as.character(2000:2021),
+returnApiQuery = FALSE
+)$dataset
+
+fnr <- c(
+"30", "01", "02", "06", "03", "34", "04", "05", "38",
+"07", "08", "42", "09", "10", "11", "46", "12", "14",
+"15", "50", "16", "17", "18", "54", "19", "20"
 )
-```
-
-```{r}
-Tid <- as.character(2000:2021)
-```
-
-```{r}
-value <- as.character
-```
-
-```{r}
-arbeidstakere <- ApiData(11616)
-```
-
-```{r}
-names(arbeidstakere)[1] <- "desc_arbHL"
-```
-
-```{r}
-arbeidstakereHL <- arbeidstakere$dataset %>%
-  rename(
-    aar = Tid,
-  ) %>% 
-  mutate(
-    fnr = arbeidstakere$dataset$Region,
-    tot_arb_HL1 = arbeidstakere$desc_arbHL$value
-  ) %>% 
-
-  select(aar, fnr, tot_arb_HL1) %>%
-
+tot_arb_HL <- tot_arb_HL %>%
+  filter(Region %in% fnr) %>%
+  select(Tid, value) %>%
+  group_by(Tid) %>%
+  summarise(arbtak_HL = sum(value)) %>%
+  ungroup() %>%
+  
   as_tibble()
+
+tot_arb_HL <- tot_arb_HL %>%
+  rename(aar = Tid)
 ```
 
 ```{r}
-#arbeidstakereHL %>%
-#group_by(aar, fnr)
+print(tot_arb_HL)
 ```
 
-```{r}
-arbeidstakereHL_ny <- arbeidstakereHL |>
-  group_by(aar, fnr) |>
-  summarise(tot_arb_HL = sum(tot_arb_HL1), by = aar) |>
-  ungroup() |>
-  select(aar, tot_arb_HL)|>
-  group_by(aar, tot_arb_HL) |>
-  summarise(tot_arb_HL = sum(tot_arb_HL), by = aar)
-
-```
-
-```{r}
-arbeidstakereHL_ny[!duplicated(arbeidstakereHL_ny$tot_arb_HL), ]
-```
-
-```{r}
-print(arbeidstakereHL_ny)
-```
-
-Øverst ser vi at vi har nå funnet opplysninger fra tabell 11616 ved hjelp av ApiData().
-
-```{r}
-#as_tibble(11616)
-#tid
-#NJ
-```
+Øverst ser vi at vi har nå funnet opplysninger fra tabell 11616 ved hjelp av ApiData()
 
 **Bor NJ jobber HL**
 
@@ -442,8 +407,35 @@ bNJjHL <- pend_00_21 %>%
 **Bor RAL jobber på NJ**
 
 ```{r}
+bRALjNJ <- pend_00_21 %>%
+  filter(bkom %in% c("k9999")) %>%
+  filter(akom %in% NJ) %>%
+  group_by(aar) %>%
+  summarise(pendlere_bRALjNJ = sum(pendlere))
+```
+
+```{r}
 tot_arb_HL <- left_join(tot_arb_HL, bNJjHL)
-tot_arb_HL <- left_join(tot_arb_HL, bRALjNL)
+tot_arb_HL <- left_join(tot_arb_HL, bRALjNJ)
+```
+
+```{r}
+tot_arb_HL <- tot_arb_HL %>% 
+  mutate(
+    bRALjRAL = arbtak_HL - pendlere_bNJjHL - pendlere_bRALjNJ
+  )
+```
+
+```{r}
+p_bRALjRAL <- tot_arb_HL %>% 
+  select(aar, pendlere = bRALjRAL) %>% 
+  mutate(
+    akom = "k9999",
+    akom_navn = "RAL",
+    bkom = "k9999",
+    bkom_navn = "RAL"
+  ) %>% 
+  select(aar, akom, akom_navn, bkom, bkom_navn, pendlere)
 ```
 
 ```{r}
@@ -451,7 +443,7 @@ pend_00_21 <- bind_rows(pend_00_21, p_bRALjRAL)
 ```
 
 ```{r}
-# pendlematrise 2005, bo Nord-Jæren
+# pendlematrise 2010, bo Nord-Jæren
 pend_00_21_boNJ_agg |>
   ungroup() |>
   filter(aar == "2010") |>
@@ -463,6 +455,9 @@ pend_00_21_boNJ_agg |>
   as.data.frame() |>
   print(width = 110)
 ```
+
+Vi ser at pendlermatrisen ser grei ut.
+Mangler nå bare totalt antall slik at vi kan regne ut andeler.
 
 ```{r}
 totalt_arb <- pend_00_21 |>
@@ -487,54 +482,313 @@ akom_navn = "Totalt_bo"
 Bruker nå bind_rows() for å nå legge inn datene
 
 ```{r}
-dim(pend_00_21_boNJ_agg)
+pend_00_21 <- bind_rows(pend_00_21, totalt_arb, totalt_bo)
+
+pendle_data_00_21 <- pend_00_21
 ```
 
 ```{r}
-names(pend_00_21_boNJ_agg)
+dim(pendle_data_00_21)
 ```
 
 ```{r}
-print(pend_00_21_boNJ_agg, n = 5)
-```
-
-Vi kan også regne ut andel av arbeidstakerne som bor i en kommune, som jobber i de ulike kommunene:
-
-```{r}
-dim(andel_pend_00_21_boNJ_agg)
+names(pendle_data_00_21)
 ```
 
 ```{r}
-names(andel_pend_00_21_boNJ_agg)
+print(pendle_data_00_21, n = 5)
+```
+
+### Andel pendlere
+
+Regner ut andel av arbeidstakere som bor i en kommune og som jobber i de ulike kommunene.
+
+```{r}
+andel_pendle_data_00_21 <- pendle_data_00_21 %>%
+  unite(knr, akom, akom_navn) %>%
+  group_by(aar, bkom, bkom_navn) %>%
+  mutate(row = row_number()) %>%
+  pivot_wider(
+    names_from = knr,
+    values_from = pendlere
+  ) %>%
+  as_tibble() %>%
+  mutate(
+    across(
+      .cols = k1103_Stavanger:k0000_Totalt_bo,
+# standard anonym funksjon
+      .fns = function(x) round((x / k0000_Totalt_bo) * 100, digits = 4)
+    )
+    ) %>%
+  ungroup()
+
 ```
 
 ```{r}
-print(andel_pend_00_21_boNJ_agg)
+dim(andel_pendle_data_00_21)
 ```
 
-Nå skal vi long før plot:
+```{r}
+names(andel_pendle_data_00_21)
+```
 
-gjør resten imorgen
+```{r}
+print(andel_pendle_data_00_21, n = 5)
+```
 
-## Bor og jobber i samme kommune på Nord-Jæren
+Pivot longer: andel_pendle_data_00_21_long hadde vi problemer med.
 
-### Internpendling et utvalg kommuner Hvor jobber folk bosatt i Stavanger kommune? Hvor jobber folk bosatt i Sandnes kommune? Hvor jobber folk bosatt i Sola kommune? Hvor jobber folk bosatt i Randaberg kommune? Hvor jobber folk bosatt i Klepp kommune? Hvor jobber folk bosatt i Time kommune? Hvor jobber folk bosatt i Gjesdal kommune?
+```{r}
+andel_pendle_data_00_21_long <- pendle_data_00_21 %>%
+  unite(knr_u_SS, akom, akom_navn) %>%
+  group_by(aar, bkom, bkom_navn) %>%
+  pivot_longer(
+    data, 
+    cols,
+    names_to = knr_u_SS,
+    values_to = pendlere
+  ) %>%
+  as_tibble() %>%
+  mutate(
+    across(
+      .cols = k1103_Stavanger:k0000_Totalt_bo,
+# standard anonym funksjon
+      .fns = function(x) round((x / k0000_Totalt_bo) * 100, digits = 4)
+    )
+    ) %>%
+  ungroup()
+```
 
-### Hvor jobber folk bosatt i Hå kommune? Hvor jobber folk bosatt i Bjerkreim kommune? Hvor jobber folk bosatt i Strand kommune? Hvor stor pendling er det fra resten av landet til Nord-Jæren?
+```{r}
+dim(andel_pendle_data_00_21_long)
+```
+
+```{r}
+names(andel_pendle_data_00_21_long)
+```
+
+```{r}
+print(andel_pendle_data_00_21_long, n = 5)
+```
+
+### Internpendling et utvalg kommuner
+
+```{r}
+andel_pendle_data_00_21_long |>
+  filter(akom == bkom) |>
+  filter(!(akom == "k9999" & bkom == "k9999")) |>
+  rename(
+    Bosted = bkom_navn
+  ) |>
+  ggplot(
+    mapping = aes(
+    x = aar,
+    y = andel,
+    group = bkom,
+    colour = bkom
+    )
+  ) +
+geom_line(lwd = 0.75) +
+theme(legend.position = 'bottom') +
+ggtitle("Intern pendling")
+```
+
+### Hvor jobber folk bosatt i Stavanger kommune?
+
+```{r}
+andel_pendle_data_00_21_long |>
+filter(bkom == "k1103") |>
+filter(!akom == "k1103") |>
+filter(aar == "2021-01-01") |>
+arrange(desc(andel)) |>
+head(n = 5)
+```
+
+### Hvor jobber folk bosatt i Sandnes kommune?
+
+```{r}
+andel_pendle_data_00_21_long |>
+filter(bkom == "k1108") |>
+filter(!akom == "k1108") |>
+filter(aar == "2021-01-01") |>
+arrange(desc(andel)) |>
+head(n = 5)
+```
+
+### Hvor jobber folk bosatt i Sola kommune?
+
+```{r}
+andel_pendle_data_00_21_long |>
+filter(bkom == "k1124") |>
+filter(!akom == "k1124") |>
+filter(aar == "2021-01-01") |>
+arrange(desc(andel)) |>
+head(n = 5)
+```
+
+### Hvor jobber folk bosatt i Randaberg kommune?
+
+```{r}
+andel_pendle_data_00_21_long |>
+filter(bkom == "k1127") |>
+filter(!akom == "k1127") |>
+filter(aar == "2021-01-01") |>
+arrange(desc(andel)) |>
+head(n = 5)
+```
+
+### Hvor jobber folk bosatt i Klepp kommune?
+
+```{r}
+andel_pendle_data_00_21_long |>
+filter(bkom == "k1120") |>
+filter(!akom == "k1120") |>
+filter(aar == "2021-01-01") |>
+arrange(desc(andel)) |>
+head(n = 5)
+```
+
+### Hvor jobber folk bosatt i Time kommune?
+
+```{r}
+andel_pendle_data_00_21_long |>
+filter(bkom == "k1121") |>
+filter(!akom == "k1121") |>
+filter(aar == "2021-01-01") |>
+arrange(desc(andel)) |>
+head(n = 5)
+```
+
+### Hvor jobber folk bosatt i Gjesdal kommune?
+
+```{r}
+andel_pendle_data_00_21_long |>
+filter(bkom == "k1122") |>
+filter(!akom == "k1122") |>
+filter(aar == "2021-01-01") |>
+arrange(desc(andel)) |>
+head(n = 5)
+```
+
+### Hvor jobber folk bosatt i Hå kommune?
+
+```{r}
+andel_pendle_data_00_21_long |>
+filter(bkom == "k1119") |>
+filter(!akom == "k1119") |>
+filter(aar == "2021-01-01") |>
+arrange(desc(andel)) |>
+head(n = 5)
+```
+
+### Hvor jobber folk bosatt i Bjerkreim kommune?
+
+```{r}
+andel_pendle_data_00_21_long |>
+filter(bkom == "k1114") |>
+filter(!akom == "k1114") |>
+filter(aar == "2021-01-01") |>
+arrange(desc(andel)) |>
+head(n = 5)
+```
+
+### Hvor jobber folk bosatt i Strand kommune?
+
+```{r}
+andel_pendle_data_00_21_long |>
+filter(bkom == "k1130") |>
+filter(!akom == "k1130") |>
+filter(aar == "2021-01-01") |>
+arrange(desc(andel)) |>
+head(n = 5)
+```
+
+### Hvor stor pendling er det fra resten av landet til Nord-Jæren?
+
+```{r}
+andel_pendle_data_00_21_long |>
+filter(bkom == "k9999") |>
+filter(!akom == "k9999") |>
+filter(aar == "2021-01-01") |>
+arrange(desc(andel)) |>
+head(n = 5)
+```
 
 ## Pendlematriser
 
 ### 2000
 
+```{r}
+pend_00_21_boNJ_agg |>
+  ungroup() |>
+  filter(aar == "2000") |>
+  select(bkom, akom, pendlere) |>
+  pivot_wider(
+    names_from = akom,
+    values_from = pendlere
+  ) |>
+  as.data.frame() |>
+  print(width = 110)
+```
+
 ### 2005
+
+```{r}
+pend_00_21_boNJ_agg |>
+  ungroup() |>
+  filter(aar == "2005") |>
+  select(bkom, akom, pendlere) |>
+  pivot_wider(
+    names_from = akom,
+    values_from = pendlere
+  ) |>
+  as.data.frame() |>
+  print(width = 110)
+```
 
 ### 2010
 
+```{r}
+pend_00_21_boNJ_agg |>
+  ungroup() |>
+  filter(aar == "2010") |>
+  select(bkom, akom, pendlere) |>
+  pivot_wider(
+    names_from = akom,
+    values_from = pendlere
+  ) |>
+  as.data.frame() |>
+  print(width = 110)
+```
+
 ### 2015
+
+```{r}
+pend_00_21_boNJ_agg |>
+  ungroup() |>
+  filter(aar == "2015") |>
+  select(bkom, akom, pendlere) |>
+  pivot_wider(
+    names_from = akom,
+    values_from = pendlere
+  ) |>
+  as.data.frame() |>
+  print(width = 110)
+```
 
 ### 2021
 
 ```{r}
-#| echo: false
-# siste
+pend_00_21_boNJ_agg |>
+  ungroup() |>
+  filter(aar == "2021") |>
+  select(bkom, akom, pendlere) |>
+  pivot_wider(
+    names_from = akom,
+    values_from = pendlere
+  ) |>
+  as.data.frame() |>
+  print(width = 110)
 ```
+
+### 
