@@ -15,14 +15,24 @@ I denne oppgaven skal vi studere pendle-mønster for regionen Sør-Rogaland (Nor
 
 ### Kommuner Sør-Rogaland 2018
 
-[Vi definerer Nord-Jæren som følgende kommuner. Vi tar med både de «gamle» og «nye». Disse kommunene vil bare inneholde data for de årene de har eksistert.\
+Vi definerer Nord-Jæren som følgende kommuner.
+Vi tar med både de «gamle» og «nye».
+Disse kommunene vil bare inneholde data for de årene de har eksistert.\
+
 Sandnes (-2019), Stavanger, Nye-Sandnes, Bjerkreim, Hå, Klepp, Time, Gjesdal, Sola, Randaberg, Forsand (-2019), Strand, Hjelmeland, Finnøy (-2019), Rennesøy (-2019), Kvitsøy.\
+
 De korresponderende kommune-numrene er:\
 1102, 1103, 1108, 1114, 1119, 1120, 1121,1122, 1124, 1127, 1129, 1130, 1133, 1141, 1142, 1144.\
-Det er verdt å merke seg at fra 1.1.2020 har vi 1108 Sandnes som består av 1102 Sandnes og 1129 Forsand. Vi har også 1103 Stavanger som består av 1103 Stavanger, 1141 Finnøy (-2019) og 1142 Rennesøy (-2019).\
-Vi ser at kommunesammenslåing blir behandlet ulikt for de to. Sandnes får nytt knr, mens Stavanger beholder sitt gamle.]{.underline}
 
-[I tillegg ble en mindre del av Forsand skilt ut og slått sammen med Strand kommune. Her vil vi se bort fra dette og legge alle arbeidstakere fra Forsand til «Nye Sandnes» (1108). Det er langt vanskeligere å håndtere en splitting av kommuner enn en sammenslåing.]{.underline}\
+Det er verdt å merke seg at fra 1.1.2020 har vi 1108 Sandnes som består av 1102 Sandnes og 1129 Forsand.
+Vi har også 1103 Stavanger som består av 1103 Stavanger, 1141 Finnøy (-2019) og 1142 Rennesøy (-2019).\
+
+Vi ser at kommunesammenslåing blir behandlet ulikt for de to.
+Sandnes får nytt knr, mens Stavanger beholder sitt gamle.
+
+I tillegg ble en mindre del av Forsand skilt ut og slått sammen med Strand kommune.
+Her vil vi se bort fra dette og legge alle arbeidstakere fra Forsand til «Nye Sandnes» (1108).
+Det er langt vanskeligere å håndtere en splitting av kommuner enn en sammenslåing.\
 
 ```{r}
 library(PxWebApiData)
@@ -45,7 +55,7 @@ returnMetaFrames = TRUE
 Det vi gjør her er at vi henter in data i R, fra SSB (statistisk sentralbyrå).
 Vi henter data fra statistikktabell 03321.
 
-Den første rammen viser, kode
+Det første vi gjør er å gjøre kommunenummer til en character vector og definerer hvilke kommuner som er i Nord-Jæren.
 
 ```{r}
 #| cache: true
@@ -69,6 +79,9 @@ pend_00_21_ssb_arbNJ <- ApiData(
   Tid = tid
     )
 ```
+
+Det vi gjør her er at vi finner tilsvarende vis antall arbeidstakere som jobber på Nord-Jæren med bosteds-kommune fordelt på hele landet.
+Vi kaller dette objektet for pend_00_21_ssb_arbNJ.
 
 ```{r}
 names(pend_00_21_ssb_arbNJ)[1] <- "desc_arbNJ"
@@ -96,9 +109,13 @@ pend_00_21_arbNJ <- pend_00_21_ssb_arbNJ$dataset %>%
   as_tibble()
 ```
 
+Det som skjer her er at vi plukker ut data fra pend_00_21_ssb_boNJ og plasserer da i pend_00_21_boNJ.
+
 ```{r}
 print(pend_00_21_arbNJ, n = 5)
 ```
+
+Etter å ha plukket ut data, får vi tibbelen over.
 
 ```{r}
 #| cache: true
@@ -171,6 +188,8 @@ knr_u_SS <- paste(
 )
 ```
 
+Det vi gjør her er å lage nye variabler nye_akom og nye_bkom og dermed tar hensyn til de nye kommunesammenslåingene.
+
 ### Bosted Nord-Jæren
 
 ```{r}
@@ -208,6 +227,8 @@ pend_00_21_boNJ <- pend_00_21_boNJ %>%
 )
 ```
 
+Tar i utgangspunktet pend_00_21_boNJ og lager dermed nye_bkom_navn, nye_akom og nye_akom_navn.
+
 ```{r}
 # pend_00_21_boNJ_agg
 pend_00_21_boNJ_agg <- pend_00_21_boNJ |>
@@ -216,6 +237,7 @@ pend_00_21_boNJ_agg <- pend_00_21_boNJ |>
   summarise(pendlere = sum(pendlere)) |>
   ungroup() |>
   select(aar, nye_akom, nye_akom_navn, nye_bkom, nye_bkom_navn, pendlere)
+
 ```
 
 ```{r}
@@ -273,6 +295,8 @@ pend_00_21_arbNJ <- pend_00_21_arbNJ %>%
 )
 ```
 
+Det vi gjør her er å slå sammen aggregering for pend_00_21_arbNJ som vi tilsvarende gjorde for pend_00_21_boNJ.
+
 ```{r}
 # pend_00_21_arbNJ_agg
 pend_00_21_arbNJ_agg <- pend_00_21_arbNJ |>
@@ -282,6 +306,8 @@ pend_00_21_arbNJ_agg <- pend_00_21_arbNJ |>
   ungroup() |>
   select(aar, nye_akom, nye_akom_navn, nye_bkom, nye_bkom_navn, pendlere)
 ```
+
+Her endrer vi variabelnavn pend_00_21_arbNJ_agg, ved hjelp av den godeste funksjonen rename().
 
 ```{r}
 pend_00_21_arbNJ_agg |>
@@ -345,8 +371,8 @@ rm(boNJ_arb_RAL, pend_00_21_arbNJ, pend_00_21_boNJ, pend_00_21_ssb_arbNJ, pend_0
 
 ## Totalt antall arbeidstakere i hele landet per år:
 
-Over ser vi at vi har hentet data fra tabell: 11616.
-Denne gir oss data data på fylke-basis.
+Over ser vi data fra tabell: 11616.
+Denne gir oss data på fylke-basis.
 Det vi gjorde var at vi hentet data for årene 2000-2021, for begge kjønn.
 Vi fant dataen for alderen 15-74 år.
 Vi fant data utifra hvor arbeidstakerne er bosatt.
@@ -355,9 +381,9 @@ Det intensjonen her er totalt antall arbeidstakere per år.
 ```{r}
 tot_arb_HL <- ApiData(
 "http://data.ssb.no/api/v0/en/table/11616",
-  Region = list("*"),
-  Alder = list("15-74*"),
-  Kjonn = list("*"),
+  Region = fnr,
+  Alder = "15-74",
+  Kjonn = c("1","2"),
   ContentsCode = list("Bosatt*"),
   Tid = as.character(2000:2021),
 returnApiQuery = FALSE
@@ -381,11 +407,14 @@ tot_arb_HL <- tot_arb_HL %>%
   rename(aar = Tid)
 ```
 
+Vi henter her data fra tabell 11616, siden den gir oss data på fylkes-basis.
+Vi dropper her Svaldbar og Jan Mayen.
+
 ```{r}
 print(tot_arb_HL)
 ```
 
-Øverst ser vi at vi har nå funnet opplysninger fra tabell 11616 ved hjelp av ApiData()
+Øverst ser vi en tibble med variabler Tid og arbtak_HL.
 
 **Bor NJ jobber HL**
 
@@ -418,6 +447,8 @@ bRALjNJ <- pend_00_21 %>%
 tot_arb_HL <- left_join(tot_arb_HL, bNJjHL)
 tot_arb_HL <- left_join(tot_arb_HL, bRALjNJ)
 ```
+
+Her setter vi sammen tot_ar_HL, bNJjHL og tot_arb_HL, bRALjNJ.
 
 ```{r}
 tot_arb_HL <- tot_arb_HL %>% 
@@ -498,6 +529,8 @@ names(pendle_data_00_21)
 ```{r}
 print(pendle_data_00_21, n = 5)
 ```
+
+Vi får opp en tibble med variabler over.
 
 ### Andel pendlere
 
