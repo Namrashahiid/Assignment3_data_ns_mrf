@@ -368,7 +368,7 @@ value <- as.character
 ```
 
 ```{r}
-ApiData(11616)
+arbeidstakere <- ApiData(11616)
 ```
 
 ```{r}
