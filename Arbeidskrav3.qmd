@@ -414,7 +414,7 @@ arbeidstakereHL_ny[!duplicated(arbeidstakereHL_ny$tot_arb_HL), ]
 print(arbeidstakereHL_ny)
 ```
 
-Øverst ser vi at vi har nå funnet opplysninger fra tabell 11616 ved hjelp av ApiData()
+Øverst ser vi at vi har nå funnet opplysninger fra tabell 11616 ved hjelp av ApiData().
 
 ```{r}
 #as_tibble(11616)
