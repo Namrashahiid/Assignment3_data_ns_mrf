@@ -35,8 +35,9 @@ library(tidyverse)
 ## Hente data fra SSB
 
 ```{r}
+# ag: foreslår å legge dette i en variabel
 #Get more info about table
-ApiData(
+meta03321 <- ApiData(
 "http://data.ssb.no/api/v0/en/table/03321",
 returnMetaFrames = TRUE
 )
@@ -53,7 +54,6 @@ Den første rammen viser, kode
 # Må være en character vector for at SSB skal skjønne hva vi spør etter
 knr <- as.character(c(1102, 1103, 1108, 1114, 1119, 1120, 1121,1122, 1124, 
                     1127, 1129, 1130, 1133, 1141, 1142, 1144))
-
 ```
 
 ```{r}
@@ -77,7 +77,6 @@ names(pend_00_21_ssb_arbNJ)[1] <- "desc_arbNJ"
 ```{r}
 #| cache: true
 pend_00_21_arbNJ <- pend_00_21_ssb_arbNJ$dataset %>%
-  
 # Observasjonene i dataset og desc_ komponenten er ordnet i samme rekkefølge 
 #  så vi trenger bare hente variablen
   rename(
@@ -90,9 +89,7 @@ pend_00_21_arbNJ <- pend_00_21_ssb_arbNJ$dataset %>%
     bkom = paste("k", Bokommuen, sep = ""),
     pendlere = value,
   ) %>% 
-
   select(aar, akom, akom_navn, bkom, bkom_navn, pendlere) %>%
-
   as_tibble()
 ```
 
@@ -135,8 +132,6 @@ pend_00_21_boNJ <- pend_00_21_ssb_boNJ$dataset %>%
 ```
 
 ```{r}
-#| eval: false
-#| echo: false
 pend_00_21_boNJ <- pend_00_21_ssb_boNJ$dataset %>%
   rename(
     aar = Tid
@@ -211,7 +206,7 @@ pend_00_21_boNJ <- pend_00_21_boNJ %>%
 ```{r}
 # pend_00_21_boNJ_agg
 pend_00_21_boNJ_agg <- pend_00_21_boNJ |>
-  group_by(nye_bkom, nye_akom, aar,
+  group_by(aar, nye_bkom, nye_akom, 
           nye_bkom_navn, nye_akom_navn) |>
   summarise(pendlere = sum(pendlere)) |>
   ungroup() |>
@@ -249,8 +244,9 @@ pend_00_21_arbNJ <- pend_00_21_arbNJ %>%
       TRUE ~ akom
     ),
   nye_akom_navn = case_when(
-    bkom %in% c("k1102", "k1108", "k1129") ~ "Sandnes",
-    bkom %in% c("k1103", "k1141", "k1142") ~ "Stavanger",
+    # ag: rettet fra bkom til akom. Ikke lett å finne ;-)
+    akom %in% c("k1102", "k1108", "k1129") ~ "Sandnes",
+    akom %in% c("k1103", "k1141", "k1142") ~ "Stavanger",
     # Øvrige Nord- Jæren beholder sitt akom_navn
     TRUE ~ akom_navn
   ),
@@ -267,7 +263,7 @@ pend_00_21_arbNJ <- pend_00_21_arbNJ %>%
     bkom %in% c("k1103", "k1141", "k1142") ~ "Stavanger",
     # Øvrige Nord- Jæren beholder sitt bkom_navn
     bkom %in% knr_u_SS ~ bkom_navn,
-# Resten av landet kodes som knr "RAL"
+    # Resten av landet kodes som knr "RAL"
     TRUE ~ "RAL"
   )
 )
@@ -276,7 +272,7 @@ pend_00_21_arbNJ <- pend_00_21_arbNJ %>%
 ```{r}
 # pend_00_21_arbNJ_agg
 pend_00_21_arbNJ_agg <- pend_00_21_arbNJ |>
-  group_by(nye_bkom, nye_akom, aar,
+  group_by(aar, nye_bkom, nye_akom, 
           nye_bkom_navn, nye_akom_navn) |>
   summarise(pendlere = sum(pendlere)) |>
   ungroup() |>
@@ -343,6 +339,27 @@ rm(boNJ_arb_RAL, pend_00_21_arbNJ, pend_00_21_boNJ, pend_00_21_ssb_arbNJ, pend_0
    )
 ```
 
+Test
+
+```{r}
+# pendlematrise 2010, bo Nord-Jæren
+pend_00_21 |>
+  ungroup() |>
+  filter(aar == "2010") |>
+  select(bkom, akom, pendlere) |>
+  pivot_wider(
+    names_from = akom,
+    values_from = pendlere
+  ) |>
+  as.data.frame() |>
+  print(width = 110)
+
+ pend_00_21 %>%
+    dplyr::group_by(bkom, akom) %>%
+    dplyr::summarise(n = dplyr::n(), .groups = "drop") %>%
+    dplyr::filter(n > 1L)
+```
+
 ## Totalt antall arbeidstakere i hele landet per år:
 
 Oppe ser vi at vi har hentet data fra tabell: 11616.
@@ -353,41 +370,84 @@ Vi fant data utifra hvor arbeidstakerne er bosatt.
 Det intensjonen her er totalt antall arbeidstakere per år.
 
 ```{r}
-ApiData(
+meta11616 <- ApiData(
 "http://data.ssb.no/api/v0/en/table/11616",
 returnMetaFrames = TRUE
 )
 ```
 
 ```{r}
+#| eval: false
+# ag: Trengs ikke dere har definert vektoren tid lengre oppe
 Tid <- as.character(2000:2021)
 ```
 
 ```{r}
+#| eval: false
+#ag: ???
 value <- as.character
 ```
 
 ```{r}
+#| eval: false
+# ag: ???
 arbeidstakere <- ApiData(11616)
 ```
 
+# AG: Henter data om totalt antall arbeidstakere fra SSB
+
+Definerer først alle fylkesnummerene.
+Henter data for fylker da vi bare er interessert i totalen.
+
 ```{r}
-names(arbeidstakere)[1] <- "desc_arbHL"
+#| echo: true
+fnr <- c(
+  "30", "01", "02", "06", "03", "34", "04", "05", "38",
+  "07", "08", "42", "09", "10", "11", "46", "12", "14",
+  "15", "50", "16", "17", "18", "54", "19", "20"
+  )
 ```
 
+Hent vha.
+`ApiData()` opplysninger fra tabell 11616 om antall arbeidstakere bosatt i hvert fylke årene 2000 til 2021.
+
 ```{r}
-arbeidstakereHL <- arbeidstakere$dataset %>%
-  rename(
-    aar = Tid,
-  ) %>% 
-  mutate(
-    fnr = arbeidstakere$dataset$Region,
-    tot_arb_HL1 = arbeidstakere$desc_arbHL$value
-  ) %>% 
+#| cache: true
+# Henter fra 11616 for der kan vi hente sysselsatte per fylke
+# bytter til mitt navn så er det lettere å følge
+# arbeidstakere <- ApiData(
+tot_arb_HL <- ApiData(
+    urlToData = "11616",
+    Region = fnr,
+    Kjonn = c("1", "2"),
+    Alder = "15-74",
+    ContentsCode = "Bosatt",
+    Tid = as.character(2000:2021)
+)
+```
 
-  select(aar, fnr, tot_arb_HL1) %>%
+Vi lager en tibble med to variabler, «Tid» (dvs. årstall) og «arbtak_HL».
 
-  as_tibble()
+```{r}
+names(tot_arb_HL)[1] <- "desc_arbHL"
+```
+
+AG: Foreslår å ta bort en del av følgende kode.
+Vi trenger egentlig bare dataset fra tot_arb_HL.
+Se forslag til kode lengre nede.
+
+```{r}
+#| eval: false
+# tot_arb_HL <- tot_arb_HL$dataset %>%
+#   rename(
+#     aar = Tid,
+#   ) %>% 
+#   mutate(
+#     fnr = tot_arb_HL$dataset$Region,
+#     tot_arb_HL1 = tot_arb_HL$desc_arbHL$value
+#   ) %>% 
+#   select(aar, fnr, tot_arb_HL1) %>%
+#   as_tibble()
 ```
 
 ```{r}
@@ -396,23 +456,40 @@ arbeidstakereHL <- arbeidstakere$dataset %>%
 ```
 
 ```{r}
-arbeidstakereHL_ny <- arbeidstakereHL |>
-  group_by(aar, fnr) |>
-  summarise(tot_arb_HL = sum(tot_arb_HL1), by = aar) |>
-  ungroup() |>
-  select(aar, tot_arb_HL)|>
-  group_by(aar, tot_arb_HL) |>
-  summarise(tot_arb_HL = sum(tot_arb_HL), by = aar)
-
+#| eval: false
+# Tar denne ut
+# tot_arb_HL_ny <- tot_arb_HL |>
+#   group_by(aar, fnr) |>
+#   summarise(tot_arb_HL = sum(tot_arb_HL1), by = aar) |>
+#   ungroup() |>
+#   select(aar, tot_arb_HL)|>
+#   group_by(aar, tot_arb_HL) |>
+#   summarise(tot_arb_HL = sum(tot_arb_HL), by = aar)
 ```
 
 ```{r}
-arbeidstakereHL_ny[!duplicated(arbeidstakereHL_ny$tot_arb_HL), ]
+# ag: endret
+#tot_arb_HL_ny[!duplicated(tot_arb_HL_ny$tot_arb_HL), ]
+
+```
+
+Gjør heller
+
+```{r}
+#ag
+tot_arb_HL <- tot_arb_HL$dataset %>% 
+  group_by(Tid) %>% 
+  summarise(arbtakHL = sum(value)) %>% 
+  ungroup() %>% 
+  rename(aar = Tid) %>% 
+  as_tibble()
 ```
 
 ```{r}
-print(arbeidstakereHL_ny)
+print(tot_arb_HL)
 ```
+
+AG: Da har vi totalt antall arbeidstakere med minimalt arbeid.
 
 Øverst ser vi at vi har nå funnet opplysninger fra tabell 11616 ved hjelp av ApiData().
 
@@ -442,8 +519,39 @@ bNJjHL <- pend_00_21 %>%
 **Bor RAL jobber på NJ**
 
 ```{r}
+bRALjNJ <- pend_00_21 %>%
+  filter(bkom %in% c("k9999")) %>%
+  filter(akom %in% NJ) %>% 
+  group_by(aar) %>%
+  summarise(pendlere_bRALjNJ = sum(pendlere))
+```
+
+```{r}
 tot_arb_HL <- left_join(tot_arb_HL, bNJjHL)
-tot_arb_HL <- left_join(tot_arb_HL, bRALjNL)
+tot_arb_HL <- left_join(tot_arb_HL, bRALjNJ)
+```
+
+Da kan vi regne ut antallet som bor i RAL og jobber i RAL
+
+```{r}
+tot_arb_HL <- tot_arb_HL %>% 
+  mutate(
+    bRALjRAL = arbtakHL - pendlere_bNJjHL - pendlere_bRALjNJ
+  )
+```
+
+Lager p_bRALjRAL
+
+```{r}
+p_bRALjRAL <- tot_arb_HL %>% 
+  select(aar, pendlere = bRALjRAL) %>% 
+  mutate(
+    akom = "k9999",
+    akom_navn = "RAL",
+    bkom = "k9999",
+    bkom_navn = "RAL"
+  ) %>% 
+  select(aar, akom, akom_navn, bkom, bkom_navn, pendlere)
 ```
 
 ```{r}
@@ -451,8 +559,8 @@ pend_00_21 <- bind_rows(pend_00_21, p_bRALjRAL)
 ```
 
 ```{r}
-# pendlematrise 2005, bo Nord-Jæren
-pend_00_21_boNJ_agg |>
+# pendlematrise 2010, bo Nord-Jæren
+pend_00_21 |>
   ungroup() |>
   filter(aar == "2010") |>
   select(bkom, akom, pendlere) |>
@@ -499,6 +607,8 @@ print(pend_00_21_boNJ_agg, n = 5)
 ```
 
 Vi kan også regne ut andel av arbeidstakerne som bor i en kommune, som jobber i de ulike kommunene:
+
+# AG: Da skulle ting kjøre til hit
 
 ```{r}
 dim(andel_pend_00_21_boNJ_agg)
