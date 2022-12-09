@@ -35,11 +35,16 @@ Her vil vi se bort fra dette og legge alle arbeidstakere fra Forsand til «Nye S
 Det er langt vanskeligere å håndtere en splitting av kommuner enn en sammenslåing.\
 
 ```{r}
-library(PxWebApiData)
-library(dplyr)
-library(ggplot2)
-library(parallel)
-library(tidyverse)
+# setup sikrer at denne blir kjørt hver gang
+# |> suppressPackageStartupMessages() gjør at vi slipper 
+# diverse messages fra pakkene
+#| label: setup
+library(PxWebApiData) |> suppressPackageStartupMessages()
+library(parallel) |> suppressPackageStartupMessages()
+# ag: tidyverse laster både ggplot og dplyr
+library(tidyverse) |> suppressPackageStartupMessages()
+library(lubridate) |> suppressPackageStartupMessages()
+library(kableExtra) |> suppressPackageStartupMessages()
 ```
 
 ## Hente data fra SSB
@@ -396,17 +401,7 @@ Vi fant data utifra hvor arbeidstakerne er bosatt.
 Det intensjonen her er totalt antall arbeidstakere per år.
 
 ```{r}
-meta11616 <- ApiData(
-tot_arb_HL <- ApiData(
-"http://data.ssb.no/api/v0/en/table/11616",
-  Region = fnr,
-  Alder = "15-74",
-  Kjonn = c("1","2"),
-  ContentsCode = list("Bosatt*"),
-  Tid = as.character(2000:2021),
-returnApiQuery = FALSE
-)$dataset
-
+# ag: fnr må defineres før den kan brukes
 fnr <- c(
 "30", "01", "02", "06", "03", "34", "04", "05", "38",
 "07", "08", "42", "09", "10", "11", "46", "12", "14",
@@ -415,21 +410,34 @@ fnr <- c(
 ```
 
 ```{r}
+tot_arb_HL <- ApiData(
+"http://data.ssb.no/api/v0/en/table/11616",
+  Region = fnr,
+  Alder = "15-74",
+  Kjonn = c("1","2"),
+  ContentsCode = list("Bosatt*"),
+# ag: bruk heller tid
+  Tid = tid,
+returnApiQuery = FALSE
+)$dataset
+```
+
+```{r}
 #| eval: false
 # ag: Trengs ikke dere har definert vektoren tid lengre oppe
-Tid <- as.character(2000:2021)
+# Tid <- as.character(2000:2021)
 ```
 
 ```{r}
 #| eval: false
 #ag: ???
-value <- as.character
+# value <- as.character
 ```
 
 ```{r}
 #| eval: false
 # ag: ???
-arbeidstakere <- ApiData(11616)
+#arbeidstakere <- ApiData(11616)
 ```
 
 # AG: Henter data om totalt antall arbeidstakere fra SSB
@@ -439,6 +447,8 @@ Henter data for fylker da vi bare er interessert i totalen.
 
 ```{r}
 #| echo: true
+#| eval: false
+# ag: fnr er alt definert og trengs ikke defineres på nytt 
 fnr <- c(
   "30", "01", "02", "06", "03", "34", "04", "05", "38",
   "07", "08", "42", "09", "10", "11", "46", "12", "14",
@@ -503,8 +513,6 @@ tot_arb_HL <- tot_arb_HL %>%
   rename(aar = Tid)
 ```
 
-
-
 ```{r}
 #| eval: false
 # Tar denne ut
@@ -538,11 +546,9 @@ tot_arb_HL <- tot_arb_HL$dataset %>%
 Vi henter her data fra tabell 11616, siden den gir oss data på fylkes-basis.
 Vi dropper her Svaldbar og Jan Mayen.
 
-
 ```{r}
 print(tot_arb_HL)
 ```
-
 
 AG: Da har vi totalt antall arbeidstakere med minimalt arbeid.
 
@@ -588,9 +594,7 @@ tot_arb_HL <- left_join(tot_arb_HL, bNJjHL)
 tot_arb_HL <- left_join(tot_arb_HL, bRALjNJ)
 ```
 
-Da kan vi regne ut antallet som bor i RAL og jobber i RAL
-Her setter vi sammen tot_ar_HL, bNJjHL og tot_arb_HL, bRALjNJ.
-
+Da kan vi regne ut antallet som bor i RAL og jobber i RAL Her setter vi sammen tot_ar_HL, bNJjHL og tot_arb_HL, bRALjNJ.
 
 ```{r}
 tot_arb_HL <- tot_arb_HL %>% 
@@ -600,7 +604,6 @@ tot_arb_HL <- tot_arb_HL %>%
 ```
 
 Lager p_bRALjRAL
-
 
     bRALjRAL = arbtak_HL - pendlere_bNJjHL - pendlere_bRALjNJ
 
@@ -612,7 +615,7 @@ p_bRALjRAL <- tot_arb_HL %>%
     akom_navn = "RAL",
     bkom = "k9999",
     bkom_navn = "RAL"
-  ) %>% 
+  ) %>%
   select(aar, akom, akom_navn, bkom, bkom_navn, pendlere)
 ```
 
@@ -622,15 +625,15 @@ pend_00_21 <- bind_rows(pend_00_21, p_bRALjRAL)
 
 ```{r}
 # pendlematrise 2010, bo Nord-Jæren
-pend_00_21 |>
-  ungroup() |>
-  filter(aar == "2010") |>
-  select(bkom, akom, pendlere) |>
+pend_00_21  %>% 
+  ungroup()  %>% 
+  filter(aar == "2010")  %>% 
+  select(bkom, akom, pendlere)  %>% 
   pivot_wider(
     names_from = akom,
     values_from = pendlere
-  ) |>
-  as.data.frame() |>
+  )  %>% 
+  as.data.frame()  %>% 
   print(width = 110)
 ```
 
@@ -642,9 +645,11 @@ totalt_arb <- pend_00_21 |>
 group_by(aar, akom, akom_navn) |>
 summarise(pendlere = sum(pendlere)) |>
 mutate(
-bkom = "k0000",
-bkom_navn = "Totalt_arb"
-)
+  bkom = "k0000",
+  bkom_navn = "Totalt_arb"
+) %>% 
+  # ag: skal vi benytte bind_rows() måvaraiablene være i samme rekkefølge
+  select(aar, akom, akom_navn, bkom, bkom_navn, pendlere)
 ```
 
 ```{r}
@@ -652,17 +657,37 @@ totalt_bo <- pend_00_21 |>
 group_by(aar, bkom, bkom_navn) |>
 summarise(pendlere = sum(pendlere)) |>
 mutate(
-akom = "k0000",
-akom_navn = "Totalt_bo"
-)
+  akom = "k0000",
+  akom_navn = "Totalt_bo"
+) %>% 
+  # ag: skal vi benytte bind_rows() måvaraiablene være i samme rekkefølge
+  select(aar, akom, akom_navn, bkom, bkom_navn, pendlere)
+```
+
+AG: For å få komplett datasett må vi også ha akom = "k0000" og bkom = "k0000".
+Dette har vi alt i tot_arb_HL.
+Prepararer bare denne slik at den kan slås sammen med pend_00_21 vha.
+bind_rows
+
+```{r}
+tot_arb_HL_prep <- tot_arb_HL %>% 
+  # endrer variabelnavn til pendlere
+  select(aar, pendlere = arbtakHL) %>% 
+  mutate(
+    akom = "k0000",
+    akom_navn = "Totalt_bo",
+    bkom = "k0000",
+    bkom_navn = "Totalt_arb",
+    # setter de nye mellom aar og pendlere
+    .before = pendlere
+  )
 ```
 
 Bruker nå bind_rows() for å nå legge inn datene
 
 ```{r}
-pend_00_21 <- bind_rows(pend_00_21, totalt_arb, totalt_bo)
-
-pendle_data_00_21 <- pend_00_21
+# ag: enklere å bare definere pendle_data_00_21 direkte så beholder vi også pend_00_21
+pendle_data_00_21 <- bind_rows(pend_00_21, totalt_arb, totalt_bo, tot_arb_HL_prep)
 ```
 
 ```{r}
@@ -689,7 +714,8 @@ Regner ut andel av arbeidstakere som bor i en kommune og som jobber i de ulike k
 andel_pendle_data_00_21 <- pendle_data_00_21 %>%
   unite(knr, akom, akom_navn) %>%
   group_by(aar, bkom, bkom_navn) %>%
-  mutate(row = row_number()) %>%
+  # ag: hvilken funksjon har denne?
+  #mutate(row = row_number()) %>%
   pivot_wider(
     names_from = knr,
     values_from = pendlere
@@ -703,7 +729,6 @@ andel_pendle_data_00_21 <- pendle_data_00_21 %>%
     )
     ) %>%
   ungroup()
-
 ```
 
 ```{r}
@@ -721,14 +746,18 @@ print(andel_pendle_data_00_21, n = 5)
 Pivot longer: andel_pendle_data_00_21_long hadde vi problemer med.
 
 ```{r}
-andel_pendle_data_00_21_long <- pendle_data_00_21 %>%
+#| eval: false
+# ag: se under for forslag til løsning
+# ag: tror det er andel_pendle_data_00_21 dere vil ha som data
+andel_pendle_data_00_21_long <- andel_pendle_data_00_21 %>%
   unite(knr_u_SS, akom, akom_navn) %>%
   group_by(aar, bkom, bkom_navn) %>%
   pivot_longer(
-    data, 
-    cols,
+# data blir foret inn automatisk som første argument når pipe    
+#    data, cols skal angi kolonnene vi vil gjøre om til en ny variabel
+    cols = k1103_Stavanger:k9999_RAL,
     names_to = knr_u_SS,
-    values_to = pendlere
+    values_to = pendle
   ) %>%
   as_tibble() %>%
   mutate(
@@ -739,6 +768,39 @@ andel_pendle_data_00_21_long <- pendle_data_00_21 %>%
     )
     ) %>%
   ungroup()
+```
+
+AG: dataene ligger nå i andel_pendle_data_00_21, men vi må få dem i long format.
+Variabelnavnene k1103_Stavanger, k1108_Sandnes etc. må legges i en ny variabel og de tilhørende verdiene må også legges i en variabel.
+Så må k1103_Stavanger osv.
+splittes ved "*\_"* og legges i to variabler `akom` og `akomnavn.`
+
+```{r}
+# legg først inn i f.eks. tmp til en ser at ting virker
+# når alt ok endre fra tmp til andel_pendle_data_00_21_long
+andel_pendle_data_00_21_long <- andel_pendle_data_00_21 %>% 
+  pivot_longer(
+    cols = k1103_Stavanger:k0000_Totalt_bo,
+    names_to = "tmp_knrN",
+    values_to = "andel"
+  ) %>% 
+  # Gjør steget over først og se at ok
+  # så kan vi tenke på å splitte opp tmp_knrN
+  separate(
+    col = tmp_knrN,
+    into = c("akom", "akom_navn"),
+    # Vi må bruke extra = "merge" siden vi har mer enn en "_" i noen navn
+    # f.eks k0000_Total_bo. extra = "merge" sikrer at vi splitter bare
+    # på første "_" (siden lengden på into er 2). Hadde vi brukt TotaltBo som navn hadde vi sluppet problemet
+    sep = "_",
+    extra = "merge"
+  ) %>% 
+  # Gjør om aar til et date objekt. ggplot() gir oss mye finere x-akse hvis vi 
+  # har date istedenfor integer (el. charcter)
+  mutate(
+    # kan hente ut år hva. year(aar)
+    aar = as_date(paste(aar, "-01-01", sep = ""))
+  )
 ```
 
 ```{r}
@@ -759,6 +821,9 @@ print(andel_pendle_data_00_21_long, n = 5)
 andel_pendle_data_00_21_long |>
   filter(akom == bkom) |>
   filter(!(akom == "k9999" & bkom == "k9999")) |>
+  # Tar ut Total siden ikke særlig spennende og ødelegger for de andre
+  # Trenger bare filtrere ut på akom, siden vi har filter(akom == bkom) ovenfor
+  filter(!akom == "k0000") |>
   rename(
     Bosted = bkom_navn
   ) |>
@@ -770,20 +835,52 @@ andel_pendle_data_00_21_long |>
     colour = bkom
     )
   ) +
-geom_line(lwd = 0.75) +
-theme(legend.position = 'bottom') +
-ggtitle("Intern pendling")
+  geom_line(lwd = 0.75) +
+  theme(legend.position = 'bottom') +
+  ggtitle("Intern pendling")
 ```
 
 ### Hvor jobber folk bosatt i Stavanger kommune?.
 
+Se @fig-p-1103 og @tbl-p-1103.
+
 ```{r}
+#| echo: false
+#| label: fig-p-1103
+#| fig-cap: Utvikling i pendling ut av Stavanger i perioden 2000 til 2021. Figuren viser utvikling i andelen av arbeidstakere som pendler til nabokommunene.
+andel_pendle_data_00_21_long |> 
+  filter(bkom == "k1103") |>
+  filter(!(akom %in% c("k0000", "k1103"))) |>
+  ggplot(
+    mapping = aes(
+      x = aar, 
+      y = andel, 
+      group = akom, 
+      colour = akom,
+      linetype = akom
+      )
+    ) +
+  geom_line(lwd = 0.75) +
+  theme(legend.position = 'bottom')
+```
+
+```{r}
+#| echo: false
+#| label: tbl-p-1103
+#| tbl-cap: Viktigste pendlekommuner for arbeidstakere bosatt i Stavanger. Dataene er for 2021 og er i prosent av totalt antall arbeidstakere bosatt i Stavanger.
 andel_pendle_data_00_21_long |>
 filter(bkom == "k1103") |>
-filter(!akom == "k1103") |>
-filter(aar == "2021-01-01") |>
+filter(!(akom %in% c("k0000", "k1103"))) |>
+filter(year(aar) == "2021") |>
 arrange(desc(andel)) |>
-head(n = 5)
+  select(akom_navn, andel) |>
+  mutate(andel = round(andel, digits = 1)) |>
+head(n = 5) |>
+  # Forslag til finere tabell
+  kbl(booktabs = T) |>
+  # ikke så fin i html, men bra i pdf. Kan styles mer for html hvis ønskelig
+  kable_styling(latex_options = c("HOLD_position", "striped"),
+                full_width = F)
 ```
 
 ### Hvor jobber folk bosatt i Sandnes kommune?
@@ -900,8 +997,16 @@ head(n = 5)
 
 ### 2000
 
+For pendlematrise se @fig-pmat-2000.
+
 ```{r}
-pend_00_21_boNJ_agg |>
+#| label: fig-pmat-2000
+#| fig-cap: Pendlematrise for Nord-Jæren år 2000.
+# ag: nå har vi alle dataene vi trenger i pendle_data_00_21 og
+# kan lett generere pendlematrise som også innholder totalen
+# kan sjekke at rekke-total og kolonne-total summerer
+# til totalt antall arbeidstakere.
+pendle_data_00_21 |>
   ungroup() |>
   filter(aar == "2000") |>
   select(bkom, akom, pendlere) |>
@@ -910,7 +1015,8 @@ pend_00_21_boNJ_agg |>
     values_from = pendlere
   ) |>
   as.data.frame() |>
-  print(width = 110)
+  kbl(booktabs = T) %>%
+  kable_styling(latex_options = c("HOLD_position", "striped"), font_size = 6)
 ```
 
 ### 2005
@@ -974,3 +1080,8 @@ pend_00_21_boNJ_agg |>
 ```
 
 ### 
+
+```{r}
+#| echo: false
+# siste
+```
