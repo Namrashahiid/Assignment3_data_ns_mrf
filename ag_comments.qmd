@@ -1,0 +1,14 @@
+---
+title: "ag_comments"
+format: pdf
+editor: visual
+---
+
+-   Dokumentet hadde en del merge conflicts som måtte fikses
+-   Det var noe trøbbel med andel_pendle_data_00_21 og andel_pendle_data_00_21_long. Nå skal det virke.
+-   Se avsnitt for Stavanger for tips om hvordan man bruker kryssreferanser til figurer og tabeller og også får satt «caption» på disse.
+-   Har også lagt inn kode som viser hvordan man enkelt får fint formaterte tabeller.
+-   Har lagt inn kode for plot for Stavanger
+-   Har lagt inn kode for å få fint formaterte pendlematriser. Det er så mye data at en må endre fontstørrelsen. Dette er et nyttig triks.
+-   Foreslå at dere ser litt på hva som hadde gått galt med generering av andel_pendle_data_00_21 og andel_pendle_data_00_21_long.
+-   Triksene brukt for tabeller og figurer er også vel verdt å ta med seg.
